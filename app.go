@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"text/template"
 
 	"github.com/gorilla/websocket"
@@ -16,16 +17,13 @@ var (
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	indexTemplate = &template.Template{}
-	sessions      = map[string]*Session{}
+	sessions      = map[string]*User{}
 )
 
-type websocketMessage struct {
-	Event string `json:"event"`
-	Data  string `json:"data"`
-}
+var Rooms = map[string]*Room{}
+
 
 func main() {
-	// Parse the flags passed to program
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.JSONFormatter{})
@@ -37,13 +35,56 @@ func main() {
 	}
 	indexTemplate = template.Must(template.New("").Parse(string(indexHTML)))
 
-	http.HandleFunc("/websocket", websocketHandler)
+	http.HandleFunc("/websocket", WebsocketHandler)
 
+	/*
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := indexTemplate.Execute(w, "ws://"+r.Host+"/websocket"); err != nil {
 			log.Fatal(err)
 		}
 	})
-
+*/
 	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+	unsafeConn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Info("upgrade:", err)
+		return
+	}
+
+	log.Infof("new connection coming: %s", unsafeConn.RemoteAddr().String())
+	c := &threadSafeWriter{unsafeConn, sync.Mutex{}}
+
+	defer c.Close()
+
+	message :=  websocketMessage{}
+	for {
+		//l , mgs , err :=c.ReadMessage()
+		//log.Infof("len: %d , msg: %s ", l , string(mgs))
+		err := c.ReadJSON(&message)
+		if err != nil {
+			log.Errorf("read message failed , %v", err)
+		}
+
+		switch message.Event {
+		case "join":
+			if _ , ok :=  Rooms[message.RoomID] ; !ok {
+				func() {
+					roomId := message.RoomID
+					room := NewRoom(roomId)
+					Rooms[roomId] = room
+					room.AddUser(message.UserID , c)
+				}()
+			}
+			log.Infof("new comer enter userid:%s ")
+		case "ack" , "hello":
+			if room , ok :=  Rooms[message.RoomID] ; !ok {
+				room.Handle(message)
+			}
+			log.Infof("")
+
+		}
+	}
 }
