@@ -22,11 +22,11 @@ var (
 
 var Rooms = map[string]*Room{}
 
-
 func main() {
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.JSONFormatter{})
+	log.SetLevel(log.DebugLevel)
 	log.Infof("Starting")
 
 	indexHTML, err := ioutil.ReadFile("index.html")
@@ -38,12 +38,12 @@ func main() {
 	http.HandleFunc("/websocket", WebsocketHandler)
 
 	/*
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if err := indexTemplate.Execute(w, "ws://"+r.Host+"/websocket"); err != nil {
-			log.Fatal(err)
-		}
-	})
-*/
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if err := indexTemplate.Execute(w, "ws://"+r.Host+"/websocket"); err != nil {
+				log.Fatal(err)
+			}
+		})
+	*/
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
@@ -59,7 +59,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-	message :=  websocketMessage{}
+	message := websocketMessage{}
 	for {
 		//l , mgs , err :=c.ReadMessage()
 		//log.Infof("len: %d , msg: %s ", l , string(mgs))
@@ -70,20 +70,19 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		switch message.Event {
 		case "join":
-			if _ , ok :=  Rooms[message.RoomID] ; !ok {
-				func() {
-					roomId := message.RoomID
-					room := NewRoom(roomId)
-					Rooms[roomId] = room
-					room.AddUser(message.UserID , c)
-				}()
+			_, ok := Rooms[message.RoomID]
+			if !ok {
+				roomId := message.RoomID
+				room := NewRoom(roomId)
+				Rooms[roomId] = room
+				room.AddUser(message.UserID, c)
 			}
 			log.Infof("new comer enter userid:%s ")
-		case "ack" , "hello":
-			if room , ok :=  Rooms[message.RoomID] ; !ok {
-				room.Handle(message)
+		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate", "answer":
+			if room, ok := Rooms[message.RoomID]; ok {
+				room.Handle(&message)
 			}
-			log.Infof("")
+			log.Infof("unkown event")
 
 		}
 	}

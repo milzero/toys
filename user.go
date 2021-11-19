@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+
 	"github.com/pion/webrtc/v3"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,15 +24,24 @@ func NewUser(roomId string, userID string, c *threadSafeWriter) *User {
 		return nil
 	}
 
-	return &User{roomId: roomId, userID: userID, c: c,
+	u := &User{roomId: roomId, userID: userID, c: c,
 		peer:         peerConnection,
 		remoteTracks: map[string]*webrtc.TrackLocalStaticRTP{},
 		tracks:       map[string]bool{}}
+
+	u.Init()
+	return u
+}
+
+func (u User) Init() {
+	u.peer.OnICECandidate(u.OnICECandidate)
+	u.peer.OnTrack(u.OnTrack)
+	u.peer.OnConnectionStateChange(u.OnIceStatusChange)
 }
 
 func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 
-	log.Infof("OnICECandidate emit")
+	log.Debugf("OnICECandidate emit %v", i.ToJSON())
 	if i == nil {
 		return
 	}
@@ -84,6 +94,19 @@ func (u *User) Offer() {
 	}); err != nil {
 		log.Info("WriteJSON  Offer Panic")
 	}
+
+}
+
+func (u *User) Publish()  {
+
+}
+
+func (u *User) unPublish()  {
+
+}
+
+func (u *User) unPublish()  {
+
 }
 
 func (u *User) Handler(message *websocketMessage) {
@@ -97,9 +120,17 @@ func (u *User) Handler(message *websocketMessage) {
 		}
 	}
 
-	u.peer.OnICECandidate(u.OnICECandidate)
-
 	switch message.Event {
+	case "publish":
+		log.Info("publish event coming")
+	case "unpublish":
+		log.Info("unpublish event coming")
+	case "subscribe":
+		log.Info("subscribe event coming")
+
+	case "unsubscribe":
+		log.Info("unsubscribe event coming")
+
 	case "candidate":
 		candidate := webrtc.ICECandidateInit{}
 		if err := json.Unmarshal([]byte(message.Data), &candidate); err != nil {

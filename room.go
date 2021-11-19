@@ -1,5 +1,7 @@
 package main
 
+import log "github.com/sirupsen/logrus"
+
 type Room struct {
 	Users map[string]*User
 	roomId   string
@@ -21,8 +23,11 @@ func (r Room) AddUser(userId string , c *threadSafeWriter) error{
 }
 
 
-func (r Room) Handle( message websocketMessage) error{
-
+func (r Room) Handle( message *websocketMessage) error{
+	log.Debugf("incoming message %v" , message)
+	userId := message.UserID
+	user := r.Users[userId]
+	user.Handler(message)
 	return nil
 }
 
