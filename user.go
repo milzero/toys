@@ -7,6 +7,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type MediaType int
+
+const (
+	Audio MediaType = 1
+	Video  MediaType  = 2
+)
+
 type User struct {
 	roomId       string
 	c            *threadSafeWriter
@@ -97,21 +104,11 @@ func (u *User) Offer() {
 
 }
 
-func (u *User) Publish()  {
+func (u *User) Publish() {
 
-}
+	range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio}
 
-func (u *User) unPublish()  {
-
-}
-
-func (u *User) unPublish()  {
-
-}
-
-func (u *User) Handler(message *websocketMessage) {
-
-	for _, typ := range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio} {
+	for _, typ :=  {
 		if _, err := u.peer.AddTransceiverFromKind(typ, webrtc.RTPTransceiverInit{
 			Direction: webrtc.RTPTransceiverDirectionRecvonly,
 		}); err != nil {
@@ -119,6 +116,26 @@ func (u *User) Handler(message *websocketMessage) {
 			return
 		}
 	}
+
+
+
+}
+
+func (u *User) UnPublish() {
+
+}
+
+func (u *User) UnSubscribe() {
+
+}
+
+func (u *User) Subscribe() {
+
+}
+
+func (u *User) Handler(message *websocketMessage) {
+
+
 
 	switch message.Event {
 	case "publish":
