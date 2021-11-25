@@ -11,7 +11,7 @@ type MediaType int
 
 const (
 	Audio MediaType = 1
-	Video  MediaType  = 2
+	Video MediaType = 2
 )
 
 type User struct {
@@ -61,7 +61,7 @@ func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 
 	if writeErr := u.c.WriteJSON(&websocketMessage{
 		Event: "candidate",
-		Data:  string(candidateString) ,
+		Data:  string(candidateString),
 	}); writeErr != nil {
 		log.Info(writeErr)
 	}
@@ -97,7 +97,7 @@ func (u *User) Offer() {
 
 	if err = u.c.WriteJSON(&websocketMessage{
 		Event: "offer",
-		Data:  string(offerString) ,
+		Data:  string(offerString),
 	}); err != nil {
 		log.Info("WriteJSON  Offer Panic")
 	}
@@ -113,6 +113,8 @@ func (u *User) Publish() {
 			return
 		}
 	}
+
+	u.Offer()
 }
 
 func (u *User) UnPublish() {
@@ -128,8 +130,6 @@ func (u *User) Subscribe() {
 }
 
 func (u *User) Handler(message *websocketMessage) {
-
-
 
 	switch message.Event {
 	case "publish":
