@@ -61,7 +61,7 @@ func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 
 	if writeErr := u.c.WriteJSON(&websocketMessage{
 		Event: "candidate",
-		Data:  string(candidateString),
+		Data:  string(candidateString) ,
 	}); writeErr != nil {
 		log.Info(writeErr)
 	}
@@ -97,7 +97,7 @@ func (u *User) Offer() {
 
 	if err = u.c.WriteJSON(&websocketMessage{
 		Event: "offer",
-		Data:  string(offerString),
+		Data:  string(offerString) ,
 	}); err != nil {
 		log.Info("WriteJSON  Offer Panic")
 	}
@@ -105,10 +105,7 @@ func (u *User) Offer() {
 }
 
 func (u *User) Publish() {
-
-	range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio}
-
-	for _, typ :=  {
+	for _, typ := range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio} {
 		if _, err := u.peer.AddTransceiverFromKind(typ, webrtc.RTPTransceiverInit{
 			Direction: webrtc.RTPTransceiverDirectionRecvonly,
 		}); err != nil {
@@ -116,9 +113,6 @@ func (u *User) Publish() {
 			return
 		}
 	}
-
-
-
 }
 
 func (u *User) UnPublish() {
@@ -139,12 +133,11 @@ func (u *User) Handler(message *websocketMessage) {
 
 	switch message.Event {
 	case "publish":
-		log.Info("publish event coming")
+		u.Publish()
 	case "unpublish":
 		log.Info("unpublish event coming")
 	case "subscribe":
 		log.Info("subscribe event coming")
-
 	case "unsubscribe":
 		log.Info("unsubscribe event coming")
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"text/template"
@@ -28,16 +27,14 @@ func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.DebugLevel)
 	log.Infof("Starting")
-
+	http.HandleFunc("/", WebsocketHandler)
+	/*
 	indexHTML, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		panic(err)
 	}
 	indexTemplate = template.Must(template.New("").Parse(string(indexHTML)))
 
-	http.HandleFunc("/websocket", WebsocketHandler)
-
-	/*
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if err := indexTemplate.Execute(w, "ws://"+r.Host+"/websocket"); err != nil {
 				log.Fatal(err)
@@ -68,6 +65,8 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Errorf("read message failed , %v", err)
 		}
 
+		log.Debug(message)
+
 		switch message.Event {
 		case "join":
 			_, ok := Rooms[message.RoomID]
@@ -77,7 +76,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Rooms[roomId] = room
 				room.AddUser(message.UserID, c)
 			}
-			log.Infof("new comer enter userid:%s ")
+			log.Infof("new comer enter userid:%v" , message)
 		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate", "answer":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
