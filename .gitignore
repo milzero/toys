@@ -2,3 +2,4 @@ mini.log
 go.sum
 .vscode
 .idea
+*.log

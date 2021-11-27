@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var title = `
@@ -31,7 +32,7 @@ var title = `
 				└────────────────────────────────────────────────────────x────────────┘
 `
 
-func initLog()  {
+func initLog() {
 	logger := &lumberjack.Logger{
 		Filename:   "mini.log",
 		MaxSize:    500,
@@ -40,7 +41,7 @@ func initLog()  {
 		Compress:   true,
 	}
 
-	mw := io.MultiWriter(os.Stdout , logger)
+	mw := io.MultiWriter(os.Stdout, logger)
 	log.SetOutput(mw)
 	//log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -96,26 +97,25 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-	message := websocketMessage{}
+
 	for {
-
-		typ , p , err := c.ReadMessage()
+		message := websocketMessage{}
+		typ, p, err := c.ReadMessage()
 		if err != nil {
-			log.Errorf("read message failed %+v" , err)
+			log.Errorf("read message failed %+v", err)
 			return
 		}
 
-		log.Debugf("read from remote: %s , type: %d , raw message %s" ,
-			   c.RemoteAddr().String() , typ, string(p[:]))
+		log.Debugf("read from remote: %s , type: %d , raw message %s",
+			c.RemoteAddr().String(), typ, string(p[:]))
 
-
-		err = json.Unmarshal(p , &message)
+		err = json.Unmarshal(p, &message)
 		if err != nil {
-			log.Errorf("Unmarshal message failed %+v" , err)
+			log.Errorf("Unmarshal message failed %+v", err)
 			return
 		}
 
-		log.Debug(message)
+		log.Debugf("incoming message event %+v", message)
 		switch message.Event {
 		case "join":
 			_, ok := Rooms[message.RoomID]
@@ -125,18 +125,15 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Rooms[roomId] = room
 				room.AddUser(message.UserID, c)
 			}
-			log.Infof("new comer enter userid:%+v", message)
 		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-			log.Infof("unkown event %+v", message)
+
 		case "answer":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-			log.Infof("unkown event %+v", message)
-
 
 		}
 	}

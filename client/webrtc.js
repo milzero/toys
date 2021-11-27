@@ -151,25 +151,31 @@ function gotMessageFromServer(message) {
                 }
             })
             .catch(errorHandler);
-    } else if (signal.ice) {
+    } else if (signal.event == "candidate") {
+        var ice =  JSON.parse(signal.data);
         peerConnection
-            .addIceCandidate(new RTCIceCandidate(signal.ice))
+            .addIceCandidate(new RTCIceCandidate(ice))
             .catch(errorHandler);
     }
 }
 
 function gotIceCandidate(event) {
     if (event.candidate != null) {
+        ice = JSON.stringify(event.candidate);
         console.log(
             JSON.stringify({
-                ice: event.candidate,
-                uuid: uuid,
+                event: "candidate",
+                room_id: uuid,
+                user_id: roomId,
+                data: ice
             })
         );
         serverConnection.send(
             JSON.stringify({
-                ice: event.candidate,
-                uuid: uuid,
+                event: "candidate",
+                room_id: uuid,
+                user_id: roomId,
+                data: ice
             })
         );
     }
