@@ -1,4 +1,4 @@
-module minisfu
+module github.com/milzero/toys
 
 go 1.15
 

@@ -1,7 +1,9 @@
-package main
+package sfu
 
 import (
 	"encoding/json"
+	"github.com/milzero/toys/protocol"
+	"github.com/milzero/toys/protocol/transport"
 
 	"github.com/pion/webrtc/v3"
 	log "github.com/sirupsen/logrus"
@@ -16,14 +18,14 @@ const (
 
 type User struct {
 	roomId       string
-	c            *threadSafeWriter
+	c            *transport.ThreadSafeWriter
 	peer         *webrtc.PeerConnection
 	remoteTracks map[string]*webrtc.TrackLocalStaticRTP
 	userID       string
 	tracks       map[string]bool
 }
 
-func NewUser(roomId string, userID string, c *threadSafeWriter) *User {
+func NewUser(roomId string, userID string, c *transport.ThreadSafeWriter) *User {
 
 	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -59,7 +61,7 @@ func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 		return
 	}
 
-	if writeErr := u.c.WriteJSON(&websocketMessage{
+	if writeErr := u.c.WriteJSON(&protocol.Message{
 		Event: "candidate",
 		Data:  string(candidateString),
 	}); writeErr != nil {
@@ -95,7 +97,7 @@ func (u *User) Offer() {
 	}
 	log.Infof("SetLocalDescription  Offer %s", u.c.RemoteAddr().String())
 
-	if err = u.c.WriteJSON(&websocketMessage{
+	if err = u.c.WriteJSON(&protocol.Message{
 		Event: "offer",
 		Data:  string(offerString),
 	}); err != nil {
@@ -130,7 +132,7 @@ func (u *User) Subscribe() {
 
 }
 
-func (u *User) Handler(message *websocketMessage) {
+func (u *User) Handler(message *protocol.Message) {
 
 	switch message.Event {
 	case "publish":

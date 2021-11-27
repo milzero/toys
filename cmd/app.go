@@ -3,33 +3,20 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"html/template"
+	"github.com/gorilla/websocket"
+	"github.com/milzero/toys/protocol"
+	"github.com/milzero/toys/protocol/transport"
+	"github.com/milzero/toys/sfu"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"net/http"
 	"os"
 	"sync"
-
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var title = `
-				┌─────────────────────────────────────────────────────────────────────┐
-				│                                                                     │
-				│                                                                     │
-				│                                                                     │
-				│    xx             x                                                 │
-				│    xxx     xx      x    x xxx      xx                 xxx           │
-				│    x  x   xxx     x     xxx xxx            xxxx       x        x  xx│
-				│    x  xxxxx xx    x     xx    x     x     xx          xx      xx   x│
-				│    x         x    x      x    x     x      xxxxxx      x      x    x│
-				│    x         x    x      x    x     x           x   xxxxxxx   x   xx│
-				│     x        x    x      x    x     x       xxxxx       x     x  xx │
-				│                   x      x    x     x                   x     xxx   │
-				│                                                         x           │
-				│                                                        xx           │
-				└────────────────────────────────────────────────────────x────────────┘
+
 `
 
 func initLog() {
@@ -69,11 +56,10 @@ var (
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-	indexTemplate = &template.Template{}
-	sessions      = map[string]*User{}
+	sessions = map[string]*sfu.User{}
 )
 
-var Rooms = map[string]*Room{}
+var Rooms = map[string]*sfu.Room{}
 
 func main() {
 	flag.Parse()
@@ -93,12 +79,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Infof("new connection coming: %s", unsafeConn.RemoteAddr().String())
-	c := &threadSafeWriter{unsafeConn, sync.Mutex{}}
+	c := &transport.ThreadSafeWriter{unsafeConn, sync.Mutex{}}
 
 	defer c.Close()
 
 	for {
-		message := websocketMessage{}
+		message := protocol.Message{}
 		typ, p, err := c.ReadMessage()
 		if err != nil {
 			log.Errorf("read message failed %+v", err)
@@ -116,16 +102,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Debugf("incoming message event %+v", message)
 
-		err := c.ReadJSON(&message)
-		typ, p, err := c.ReadMessage()
-		if err != nil {
-			log.Errorf("read message failed %+v", err)
-			return
-		}
-
-		log.Debugf("read from remote: %s , type: %d , raw message %s",
-			c.RemoteAddr().String(), typ, string(p[:]))
-
 		err = json.Unmarshal(p, &message)
 		if err != nil {
 			log.Errorf("Unmarshal message failed %+v", err)
@@ -138,7 +114,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			_, ok := Rooms[message.RoomID]
 			if !ok {
 				roomId := message.RoomID
-				room := NewRoom(roomId)
+				room := sfu.NewRoom(roomId)
 				Rooms[roomId] = room
 				room.AddUser(message.UserID, c)
 			}

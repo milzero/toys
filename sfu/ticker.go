@@ -1,4 +1,4 @@
-package main
+package sfu
 
 import (
 	"time"
@@ -12,8 +12,8 @@ type Ticker struct {
 	d      time.Duration
 	cancel chan struct{}
 	reset  chan struct{}
-	stop   chan struct{}
-	fn     fn
+	stop chan struct{}
+	fn   fn
 }
 
 func NewTicker(d time.Duration, fn fn) *Ticker {
