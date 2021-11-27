@@ -145,11 +145,11 @@ func (u *User) Handler(message *websocketMessage) {
 	case "candidate":
 		candidate := webrtc.ICECandidateInit{}
 		if err := json.Unmarshal([]byte(message.Data), &candidate); err != nil {
-			log.Println(err)
+			log.Errorf(" json.Unmarshal ICECandidateInit err:%+v" , err)
 			return
 		}
 		if err := u.peer.AddICECandidate(candidate); err != nil {
-			log.Println(err)
+			log.Errorf(" add ICECandidateInit err:%+v" , err)
 			return
 		}
 	case "answer":
