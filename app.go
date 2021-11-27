@@ -1,14 +1,67 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"net/http"
-	"sync"
-	"text/template"
-
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"html/template"
+	"io"
+	"net/http"
+	"os"
+	"sync"
 )
+
+var title = `
+				┌─────────────────────────────────────────────────────────────────────┐
+				│                                                                     │
+				│                                                                     │
+				│                                                                     │
+				│    xx             x                                                 │
+				│    xxx     xx      x    x xxx      xx                 xxx           │
+				│    x  x   xxx     x     xxx xxx            xxxx       x        x  xx│
+				│    x  xxxxx xx    x     xx    x     x     xx          xx      xx   x│
+				│    x         x    x      x    x     x      xxxxxx      x      x    x│
+				│    x         x    x      x    x     x           x   xxxxxxx   x   xx│
+				│     x        x    x      x    x     x       xxxxx       x     x  xx │
+				│                   x      x    x     x                   x     xxx   │
+				│                                                         x           │
+				│                                                        xx           │
+				└────────────────────────────────────────────────────────x────────────┘
+`
+
+func initLog()  {
+	logger := &lumberjack.Logger{
+		Filename:   "mini.log",
+		MaxSize:    500,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
+	}
+
+	mw := io.MultiWriter(os.Stdout , logger)
+	log.SetOutput(mw)
+	//log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:               false,
+		DisableColors:             false,
+		ForceQuote:                true,
+		DisableQuote:              false,
+		EnvironmentOverrideColors: false,
+		DisableTimestamp:          false,
+		FullTimestamp:             false,
+		TimestampFormat:           "",
+		DisableSorting:            false,
+		SortingFunc:               nil,
+		DisableLevelTruncation:    false,
+		PadLevelText:              false,
+		QuoteEmptyFields:          false,
+		FieldMap:                  nil,
+		CallerPrettyfier:          nil,
+	})
+	log.SetLevel(log.DebugLevel)
+}
 
 var (
 	addr     = flag.String("addr", ":8080", "http service address")
@@ -23,10 +76,9 @@ var Rooms = map[string]*Room{}
 
 func main() {
 	flag.Parse()
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetLevel(log.DebugLevel)
-	log.Infof("Starting")
+	initLog()
+
+	log.Info(title)
 	http.HandleFunc("/", WebsocketHandler)
 
 	log.Fatal(http.ListenAndServe(*addr, nil))
@@ -46,9 +98,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := websocketMessage{}
 	for {
-		err := c.ReadJSON(&message)
+
+		typ , p , err := c.ReadMessage()
 		if err != nil {
-			log.Errorf("read message failed , %v", err)
+			log.Errorf("read message failed %+v" , err)
+			return
+		}
+
+		log.Debugf("read from remote: %s , type: %d , raw message %s" ,
+			   c.RemoteAddr().String() , typ, string(p[:]))
+
+
+		err = json.Unmarshal(p , &message)
+		if err != nil {
+			log.Errorf("Unmarshal message failed %+v" , err)
 			return
 		}
 
@@ -62,12 +125,18 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Rooms[roomId] = room
 				room.AddUser(message.UserID, c)
 			}
-			log.Infof("new comer enter userid:%v", message)
-		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate", "answer":
+			log.Infof("new comer enter userid:%+v", message)
+		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-			log.Infof("unkown event %v", message)
+			log.Infof("unkown event %+v", message)
+		case "answer":
+			if room, ok := Rooms[message.RoomID]; ok {
+				room.Handle(&message)
+			}
+			log.Infof("unkown event %+v", message)
+
 
 		}
 	}
