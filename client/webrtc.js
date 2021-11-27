@@ -61,15 +61,17 @@ function publish(){
 }
 
 function join(){
+
+    var data = JSON.stringify({
+        video: true,
+        audio: true,
+    });
     serverConnection.send(
         JSON.stringify({
             event: "join",
             room_id: uuid,
             user_id: roomId,
-            data: {
-                video: true,
-                audio: true,
-            }
+            data: data,
         })
     );     
 }
@@ -178,7 +180,7 @@ function createdDescription(description) {
     peerConnection
         .setLocalDescription(description)
         .then(function () {
-            var sdp   = peerConnection.localDescription
+            var sdp   = JSON.stringify(peerConnection.localDescription); 
             console.log(
                 JSON.stringify({
                     event: "answer",
