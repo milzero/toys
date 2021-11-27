@@ -106,6 +106,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+
 		log.Debugf("read from remote: %s , type: %d , raw message %s",
 			c.RemoteAddr().String(), typ, string(p[:]))
 
