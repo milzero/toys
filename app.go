@@ -29,7 +29,6 @@ func main() {
 	log.Infof("Starting")
 	http.HandleFunc("/", WebsocketHandler)
 
-
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
@@ -47,15 +46,13 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := websocketMessage{}
 	for {
-		//l , mgs , err :=c.ReadMessage()
-		//log.Infof("len: %d , msg: %s ", l , string(mgs))
 		err := c.ReadJSON(&message)
 		if err != nil {
 			log.Errorf("read message failed , %v", err)
+			return
 		}
 
 		log.Debug(message)
-
 		switch message.Event {
 		case "join":
 			_, ok := Rooms[message.RoomID]
@@ -70,7 +67,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-			log.Infof("unkown event %v" , message)
+			log.Infof("unkown event %v", message)
 
 		}
 	}
