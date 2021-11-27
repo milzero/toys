@@ -28,19 +28,8 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 	log.Infof("Starting")
 	http.HandleFunc("/", WebsocketHandler)
-	/*
-	indexHTML, err := ioutil.ReadFile("index.html")
-	if err != nil {
-		panic(err)
-	}
-	indexTemplate = template.Must(template.New("").Parse(string(indexHTML)))
 
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if err := indexTemplate.Execute(w, "ws://"+r.Host+"/websocket"); err != nil {
-				log.Fatal(err)
-			}
-		})
-	*/
+
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
@@ -76,12 +65,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Rooms[roomId] = room
 				room.AddUser(message.UserID, c)
 			}
-			log.Infof("new comer enter userid:%v" , message)
+			log.Infof("new comer enter userid:%v", message)
 		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate", "answer":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-			log.Infof("unkown event")
+			log.Infof("unkown event %v" , message)
 
 		}
 	}

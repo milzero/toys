@@ -48,11 +48,11 @@ func (u User) Init() {
 
 func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 
-	log.Debugf("OnICECandidate emit %v", i.ToJSON())
+
 	if i == nil {
 		return
 	}
-
+	log.Debugf("OnICECandidate emit %v", i.ToJSON())
 	candidateString, err := json.Marshal(i.ToJSON())
 	if err != nil {
 		log.Info(err)

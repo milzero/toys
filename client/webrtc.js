@@ -133,13 +133,15 @@ function gotMessageFromServer(message) {
 
     // Ignore messages from ourself
     if (signal.uuid == uuid) return;
+    var event = signal.data;
 
-    if (signal.sdp) {
+    if (signal.event == "offer") {
+        offer = JSON.parse(signal.data);
         peerConnection
-            .setRemoteDescription(new RTCSessionDescription(signal.sdp))
+            .setRemoteDescription(new RTCSessionDescription(offer))
             .then(function () {
                 // Only create answers in response to offers
-                if (signal.sdp.type == "offer") {
+                if (offer.type == "offer") {
                     peerConnection
                         .createAnswer()
                         .then(createdDescription)
@@ -173,23 +175,28 @@ function gotIceCandidate(event) {
 
 function createdDescription(description) {
     console.log("got description");
-
     peerConnection
         .setLocalDescription(description)
         .then(function () {
+            var sdp   = peerConnection.localDescription
             console.log(
                 JSON.stringify({
-                    sdp: peerConnection.localDescription,
-                    uuid: uuid,
+                    event: "answer",
+                    room_id: uuid,
+                    user_id: roomId,
+                    data: sdp
                 })
             );
 
             serverConnection.send(
                 JSON.stringify({
-                    sdp: peerConnection.localDescription,
-                    uuid: uuid,
+                    event: "answer",
+                    room_id: uuid,
+                    user_id: roomId,
+                    data: sdp
                 })
             );
+        
         })
         .catch(errorHandler);
 }
