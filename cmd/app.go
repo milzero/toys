@@ -16,7 +16,21 @@ import (
 )
 
 var title = `
-
+				┌─────────────────────────────────────────────────────────────────────┐
+				│                                                                     │
+				│                                                                     │
+				│                                                                     │
+				│    xx             x                                                 │
+				│    xxx     xx      x    x xxx      xx                 xxx           │
+				│    x  x   xxx     x     xxx xxx            xxxx       x        x  xx│
+				│    x  xxxxx xx    x     xx    x     x     xx          xx      xx   x│
+				│    x         x    x      x    x     x      xxxxxx      x      x    x│
+				│    x         x    x      x    x     x           x   xxxxxxx   x   xx│
+				│     x        x    x      x    x     x       xxxxx       x     x  xx │
+				│                   x      x    x     x                   x     xxx   │
+				│                                                         x           │
+				│                                                        xx           │
+				└────────────────────────────────────────────────────────x────────────┘
 `
 
 func initLog() {
@@ -102,13 +116,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Debugf("incoming message event %+v", message)
 
-		err = json.Unmarshal(p, &message)
-		if err != nil {
-			log.Errorf("Unmarshal message failed %+v", err)
-			return
-		}
-
-		log.Debug(message)
 		switch message.Event {
 		case "join":
 			_, ok := Rooms[message.RoomID]
@@ -126,8 +133,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
-
-			log.Infof("unkown event %v", message)
 		}
 	}
 }

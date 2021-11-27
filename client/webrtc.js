@@ -161,7 +161,7 @@ function gotMessageFromServer(message) {
 
 function gotIceCandidate(event) {
     if (event.candidate != null) {
-        ice = JSON.stringify(event.candidate);
+        var ice = JSON.stringify(event.candidate);
         console.log(
             JSON.stringify({
                 event: "candidate",
