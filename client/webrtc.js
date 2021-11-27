@@ -122,7 +122,6 @@ function unSubscribe(){
 
 function start(isCaller) {
     peerConnection = new RTCPeerConnection(peerConnectionConfig);
-
     peerConnection.onicecandidate = gotIceCandidate;
     peerConnection.ontrack = gotRemoteStream;
     peerConnection.addStream(localStream);

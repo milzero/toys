@@ -43,7 +43,6 @@ func initLog() {
 
 	mw := io.MultiWriter(os.Stdout, logger)
 	log.SetOutput(mw)
-	//log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:               false,
 		DisableColors:             false,
@@ -97,7 +96,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-
 	for {
 		message := websocketMessage{}
 		typ, p, err := c.ReadMessage()
@@ -105,7 +103,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Errorf("read message failed %+v", err)
 			return
 		}
-
 
 		log.Debugf("read from remote: %s , type: %d , raw message %s",
 			c.RemoteAddr().String(), typ, string(p[:]))
