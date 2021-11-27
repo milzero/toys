@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+</head>
+<script type="text/javascript" src="webrtc.js"></script>
+<body>
+    <div>
+        <input type="text" id="roomId" />
+        <input type="text" id="uid" />
+        <button type="button" onclick="pageReady()">init</button>
+        <button type="button" onclick="join()">join</button>
+        <button type="button" onclick="publish()">publish</button>
+        <button type="button">exit</button>
+    </div>
+    <h3>Local Video</h3>
+    <video id="localVideo" width="160" height="120" autoplay muted></video>
+
+    <h3>Remote Video</h3>
+    <div id="remoteVideos"></div>
+
+    <h3>Logs</h3>
+    <div id="logs"></div>
+</body>
+
+<script>
+</script>
+
+</html>
