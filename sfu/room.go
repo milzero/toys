@@ -75,8 +75,8 @@ func (r *Room) OnNewUser( user *User) error{
 		if uid == user.userID {
 			continue
 		}
-
 		user.Subscribe(u)
+		u.Subscribe(user)
 	}
 	return nil
 }

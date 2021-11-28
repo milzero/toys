@@ -158,13 +158,18 @@ func (u *User) Subscribe(user *User) {
 	}
 
 	if _, ok := u.publishers[user.userID]; !ok {
+		var  tracks = 0
 		for _, track := range user.remoteTracks {
 			u.peer.AddTrack(track)
+			tracks = tracks + 1
 		}
-		err := u.Offer()
-		if err == nil {
-			u.publishers[user.userID] = user
+		if tracks > 0 {
+			err := u.Offer()
+			if err == nil {
+				u.publishers[user.userID] = user
+			}
 		}
+
 	} else {
 		u.log.Warnf("%s have subscribe %s", u.userID, user.userID)
 	}
@@ -199,8 +204,9 @@ func (u *User) Answer(message *protocol.Message) error {
 }
 
 func (u *User) OnTrack(t *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-
+	
 	trackLocal, _ := webrtc.NewTrackLocalStaticRTP(t.Codec().RTPCodecCapability, t.ID(), t.StreamID())
+	trackLocal.Kind()
 	u.remoteTracks[trackLocal.ID()] = trackLocal
 	buf := make([]byte, 1500)
 	for {
