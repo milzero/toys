@@ -2,6 +2,7 @@ package sfu
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
 
@@ -22,7 +23,7 @@ type User struct {
 	peer         *webrtc.PeerConnection
 	remoteTracks map[string]*webrtc.TrackLocalStaticRTP
 	userID       string
-	tracks       map[string]bool
+	publishers   map[string]*User
 }
 
 func NewUser(roomId string, userID string, c *transport.ThreadSafeWriter) *User {
@@ -36,7 +37,7 @@ func NewUser(roomId string, userID string, c *transport.ThreadSafeWriter) *User 
 	u := &User{roomId: roomId, userID: userID, c: c,
 		peer:         peerConnection,
 		remoteTracks: map[string]*webrtc.TrackLocalStaticRTP{},
-		tracks:       map[string]bool{}}
+	}
 
 	u.Init()
 	return u
@@ -48,16 +49,15 @@ func (u User) Init() {
 	u.peer.OnConnectionStateChange(u.OnIceStatusChange)
 }
 
-func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
-
-	if i == nil {
+func (u *User) OnICECandidate(iceCandidate *webrtc.ICECandidate) {
+	if iceCandidate == nil {
 		return
 	}
 
-	log.Debugf("OnICECandidate emit %v", i.ToJSON())
-	candidateString, err := json.Marshal(i.ToJSON())
+	log.Debugf("OnICECandidate emit %+v", iceCandidate.ToJSON())
+	candidateString, err := json.Marshal(iceCandidate.ToJSON())
 	if err != nil {
-		log.Info(err)
+		log.Error(err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (u *User) OnICECandidate(i *webrtc.ICECandidate) {
 		Event: "candidate",
 		Data:  string(candidateString),
 	}); writeErr != nil {
-		log.Info(writeErr)
+		log.Error(writeErr)
 	}
 }
 
@@ -77,33 +77,46 @@ func (u *User) OnIceStatusChange(p webrtc.PeerConnectionState) {
 		}
 	case webrtc.PeerConnectionStateClosed:
 		log.Info("connection closed")
+	case webrtc.PeerConnectionStateConnected:
+		log.Info("connection connected")
+	case webrtc.PeerConnectionStateConnecting:
+		log.Info("connection connecting")
+	case webrtc.PeerConnectionStateDisconnected:
+		log.Info("connection disconnected")
 	}
 }
 
-func (u *User) Offer() {
+func (u *User) Offer() error {
 
 	offer, err := u.peer.CreateOffer(nil)
 	if err != nil {
 		log.Errorf("CreateOffer Panic")
+		return fmt.Errorf("create offer failed  %s", err)
+
 	}
 
 	if err = u.peer.SetLocalDescription(offer); err != nil {
 		log.Errorf("SetLocalDescription  %v , %s", err, u.c.RemoteAddr().String())
+		return fmt.Errorf("SetLocalDescription  %v , %s", err, u.c.RemoteAddr().String())
+
 	}
 
 	offerString, err := json.Marshal(offer)
 	if err != nil {
-		log.Errorf("Marshal  Offer Panic")
+		log.Errorf("marshal  offer faled")
+		return fmt.Errorf("marshal  offer faled")
 	}
-	log.Infof("SetLocalDescription  Offer %s", u.c.RemoteAddr().String())
+	log.Infof("SetLocalDescription  Offer %s", u.userID)
 
 	if err = u.c.WriteJSON(&protocol.Message{
 		Event: "offer",
 		Data:  string(offerString),
 	}); err != nil {
-		log.Info("WriteJSON  Offer Panic")
+		log.Info("write offer to client failed : %s" , err)
+		return fmt.Errorf("write offer to clienr failed : %s" , err)
 	}
 
+	return nil
 }
 
 func (u *User) Publish() {
@@ -117,7 +130,10 @@ func (u *User) Publish() {
 		}
 	}
 
-	u.Offer()
+	err := u.Offer()
+	if err != nil {
+		log.Info(err)
+	}
 }
 
 func (u *User) UnPublish() {
@@ -128,43 +144,49 @@ func (u *User) UnSubscribe() {
 
 }
 
-func (u *User) Subscribe() {
+func (u *User) Subscribe(user *User) {
+
+	if u == nil {
+		log.Errorf("Subscribe , but user is nil")
+		return
+	}
+
+	if _ , ok := u.publishers[user.userID];!ok  {
+		for _, track := range user.remoteTracks {
+			 u.peer.AddTrack(track)
+		}
+		err :=u.Offer()
+		if err != nil {
+			u.publishers[user.userID] = user
+		}
+	}else {
+		log.Warnf("%s have subscribe %s" , u.userID , user.userID)
+	}
 
 }
 
-func (u *User) Handler(message *protocol.Message) {
+func (u *User) Candidate(message *protocol.Message) {
+	candidate := webrtc.ICECandidateInit{}
+	if err := json.Unmarshal([]byte(message.Data), &candidate); err != nil {
+		log.Errorf(" json.Unmarshal ICECandidateInit err:%+v", err)
+		return
+	}
+	if err := u.peer.AddICECandidate(candidate); err != nil {
+		log.Errorf(" add ICECandidateInit err:%+v", err)
+		return
+	}
+}
 
-	switch message.Event {
-	case "publish":
-		u.Publish()
-	case "unpublish":
-		log.Info("unpublish event coming")
-	case "subscribe":
-		log.Info("subscribe event coming")
-	case "unsubscribe":
-		log.Info("unsubscribe event coming")
+func (u *User) Answer(message *protocol.Message) {
+	answer := webrtc.SessionDescription{}
+	if err := json.Unmarshal([]byte(message.Data), &answer); err != nil {
+		log.Panic(err)
+		return
+	}
 
-	case "candidate":
-		candidate := webrtc.ICECandidateInit{}
-		if err := json.Unmarshal([]byte(message.Data), &candidate); err != nil {
-			log.Errorf(" json.Unmarshal ICECandidateInit err:%+v", err)
-			return
-		}
-		if err := u.peer.AddICECandidate(candidate); err != nil {
-			log.Errorf(" add ICECandidateInit err:%+v", err)
-			return
-		}
-	case "answer":
-		answer := webrtc.SessionDescription{}
-		if err := json.Unmarshal([]byte(message.Data), &answer); err != nil {
-			log.Panic(err)
-			return
-		}
-
-		if err := u.peer.SetRemoteDescription(answer); err != nil {
-			log.Println(err)
-			return
-		}
+	if err := u.peer.SetRemoteDescription(answer); err != nil {
+		log.Println(err)
+		return
 	}
 }
 
@@ -174,7 +196,7 @@ func (u *User) OnTrack(t *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 	u.remoteTracks[trackLocal.ID()] = trackLocal
 	buf := make([]byte, 1500)
 	for {
-		i, _, err := t.Read(buf)
+		i, _ , err := t.Read(buf)
 		if err != nil {
 			return
 		}

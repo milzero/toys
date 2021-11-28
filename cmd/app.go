@@ -15,22 +15,14 @@ import (
 	"sync"
 )
 
-var title = `
-				┌─────────────────────────────────────────────────────────────────────┐
-				│                                                                     │
-				│                                                                     │
-				│                                                                     │
-				│    xx             x                                                 │
-				│    xxx     xx      x    x xxx      xx                 xxx           │
-				│    x  x   xxx     x     xxx xxx            xxxx       x        x  xx│
-				│    x  xxxxx xx    x     xx    x     x     xx          xx      xx   x│
-				│    x         x    x      x    x     x      xxxxxx      x      x    x│
-				│    x         x    x      x    x     x           x   xxxxxxx   x   xx│
-				│     x        x    x      x    x     x       xxxxx       x     x  xx │
-				│                   x      x    x     x                   x     xxx   │
-				│                                                         x           │
-				│                                                        xx           │
-				└────────────────────────────────────────────────────────x────────────┘
+const title = `\r\n
+__          __    _      _____  _______  _____ 
+\ \        / /   | |    |  __ \|__   __|/ ____|
+ \ \  /\  / /___ | |__  | |__) |  | |  | |     
+  \ \/  \/ // _ \| '_ \ |  _  /   | |  | |     
+   \  /\  /|  __/| |_) || | \ \   | |  | |____ 
+    \/  \/  \___||_.__/ |_|  \_\  |_|   \_____|
+                                               
 `
 
 func initLog() {
@@ -44,7 +36,6 @@ func initLog() {
 
 	mw := io.MultiWriter(os.Stdout, logger)
 	log.SetOutput(mw)
-	//log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:               false,
 		DisableColors:             false,
@@ -81,9 +72,9 @@ func main() {
 
 	log.Info(title)
 	http.HandleFunc("/", WebsocketHandler)
-
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
+
 
 func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	unsafeConn, err := upgrader.Upgrade(w, r, nil)
@@ -95,7 +86,16 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof("new connection coming: %s", unsafeConn.RemoteAddr().String())
 	c := &transport.ThreadSafeWriter{unsafeConn, sync.Mutex{}}
 
-	defer c.Close()
+
+	var room *sfu.Room
+	var userId string
+
+	defer func() {
+		if room != nil {
+			room.DeleteUser(userId)
+		}
+		c.Close()
+	}()
 
 	for {
 		message := protocol.Message{}
@@ -116,20 +116,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Debugf("incoming message event %+v", message)
 
+
 		switch message.Event {
 		case "join":
-			_, ok := Rooms[message.RoomID]
+			roomId := message.RoomID
+			_, ok := Rooms[roomId]
 			if !ok {
-				roomId := message.RoomID
-				room := sfu.NewRoom(roomId)
+				room = sfu.NewRoom(roomId)
 				Rooms[roomId] = room
-				room.AddUser(message.UserID, c)
 			}
-		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate":
-			if room, ok := Rooms[message.RoomID]; ok {
-				room.Handle(&message)
-			}
-		case "answer":
+
+			room = Rooms[roomId]
+			room.AddUser(message.UserID, c)
+			userId = message.UserID
+		case "publish", "unpublish", "subscribe", "unsubscribe", "exit", "candidate","answer":
 			if room, ok := Rooms[message.RoomID]; ok {
 				room.Handle(&message)
 			}
