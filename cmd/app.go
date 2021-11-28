@@ -4,14 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
+	common "github.com/milzero/toys/common"
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
 	"github.com/milzero/toys/sfu"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"io"
 	"net/http"
-	"os"
 	"sync"
 )
 
@@ -25,36 +22,6 @@ __          __    _      _____  _______  _____
                                                
 `
 
-func initLog() {
-	logger := &lumberjack.Logger{
-		Filename:   "mini.log",
-		MaxSize:    500,
-		MaxBackups: 3,
-		MaxAge:     28,
-		Compress:   true,
-	}
-
-	mw := io.MultiWriter(os.Stdout, logger)
-	log.SetOutput(mw)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:               false,
-		DisableColors:             false,
-		ForceQuote:                true,
-		DisableQuote:              false,
-		EnvironmentOverrideColors: false,
-		DisableTimestamp:          false,
-		FullTimestamp:             false,
-		TimestampFormat:           "",
-		DisableSorting:            false,
-		SortingFunc:               nil,
-		DisableLevelTruncation:    false,
-		PadLevelText:              false,
-		QuoteEmptyFields:          false,
-		FieldMap:                  nil,
-		CallerPrettyfier:          nil,
-	})
-	log.SetLevel(log.DebugLevel)
-}
 
 var (
 	addr     = flag.String("addr", ":8080", "http service address")
@@ -66,9 +33,10 @@ var (
 
 var Rooms = map[string]*sfu.Room{}
 
+var log = common.NewLog().WithField("module" , "main")
+
 func main() {
 	flag.Parse()
-	initLog()
 
 	log.Info(title)
 	http.HandleFunc("/", WebsocketHandler)

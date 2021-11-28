@@ -49,7 +49,7 @@ function getUserMediaSuccess(stream) {
     localVideo.srcObject = stream;
 }
 
-function publish(){
+function publish() {
     serverConnection.send(
         JSON.stringify({
             event: "publish",
@@ -57,10 +57,10 @@ function publish(){
             user_id: roomId,
             data: '{"video": "true","audio": "true",}'
         })
-    );     
+    );
 }
 
-function join(){
+function join() {
 
     var data = JSON.stringify({
         video: true,
@@ -73,10 +73,10 @@ function join(){
             user_id: roomId,
             data: data,
         })
-    );     
+    );
 }
 
-function unPublish(){
+function unPublish() {
     serverConnection.send(
         JSON.stringify({
             event: "unPublish",
@@ -87,25 +87,10 @@ function unPublish(){
                 audio: true,
             }
         })
-    );     
+    );
 }
 
-function subscribe(){
-    serverConnection.send(
-        JSON.stringify({
-            event: "unPublish",
-            room_id: uuid,
-            user_id: roomId,
-            users: [],
-            data: {
-                video: true,
-                audio: true,
-            }
-        })
-    );     
-}
-
-function unSubscribe(){
+function subscribe() {
     serverConnection.send(
         JSON.stringify({
             event: "unPublish",
@@ -117,7 +102,22 @@ function unSubscribe(){
                 audio: true,
             }
         })
-    );     
+    );
+}
+
+function unSubscribe() {
+    serverConnection.send(
+        JSON.stringify({
+            event: "unPublish",
+            room_id: uuid,
+            user_id: roomId,
+            users: [],
+            data: {
+                video: true,
+                audio: true,
+            }
+        })
+    );
 }
 
 function start(isCaller) {
@@ -152,7 +152,7 @@ function gotMessageFromServer(message) {
             })
             .catch(errorHandler);
     } else if (signal.event == "candidate") {
-        var ice =  JSON.parse(signal.data);
+        var ice = JSON.parse(signal.data);
         peerConnection
             .addIceCandidate(new RTCIceCandidate(ice))
             .catch(errorHandler);
@@ -186,7 +186,7 @@ function createdDescription(description) {
     peerConnection
         .setLocalDescription(description)
         .then(function () {
-            var sdp   = JSON.stringify(peerConnection.localDescription); 
+            var sdp = JSON.stringify(peerConnection.localDescription);
             console.log(
                 JSON.stringify({
                     event: "answer",
@@ -204,14 +204,34 @@ function createdDescription(description) {
                     data: sdp
                 })
             );
-        
+
         })
         .catch(errorHandler);
 }
 
 function gotRemoteStream(event) {
     console.log("got remote stream");
-    remoteVideo.srcObject = event.streams[0];
+    if (event.track.kind === 'audio') {
+        return;
+    }
+
+    let el = document.createElement(event.track.kind)
+    el.srcObject = event.streams[0]
+    el.autoplay = true;
+    el.controls = true;
+    document.getElementById('remoteVideos').appendChild(el);
+
+    event.track.onmute = function (event) {
+        el.play();
+    }
+
+    event.streams[0].onremovetrack = ({
+        track
+    }) => {
+        if (el.parentNode) {
+            el.parentNode.removeChild(el);
+        }
+    }
 }
 
 function errorHandler(error) {

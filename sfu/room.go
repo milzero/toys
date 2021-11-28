@@ -2,20 +2,24 @@ package sfu
 
 import (
 	"errors"
+	"github.com/google/martian/log"
+	"github.com/milzero/toys/common"
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
-	log "github.com/sirupsen/logrus"
+	 "github.com/sirupsen/logrus"
 )
 
 type Room struct {
 	Users  map[string]*User
 	RoomId string
+	log  *logrus.Entry
 }
 
 func NewRoom(roomId string) *Room {
 	return &Room{
 		Users:  map[string]*User{},
 		RoomId: roomId,
+		log:  common.NewLog().WithField("roomId" , roomId),
 	}
 }
 
@@ -36,7 +40,7 @@ func (r *Room) DeleteUser(userId string) error{
 
 
 func (r *Room) Handle( message *protocol.Message) error{
-	log.Debugf("incoming message %v" , message)
+	r.log.Debugf("incoming message %v" , message)
 	userId := message.UserID
 	user , ok := r.Users[userId]
 	if !ok {
@@ -48,16 +52,16 @@ func (r *Room) Handle( message *protocol.Message) error{
 	case "publish":
 		user.Publish()
 	case "unpublish":
-		log.Debug("unpublish event coming")
+		r.log.Debug("unpublish event coming")
 	case "subscribe":
-		log.Debug("subscribe event coming")
+		r.log.Debug("subscribe event coming")
 	case "unsubscribe":
-		log.Debug("unsubscribe event coming")
+		r.log.Debug("unsubscribe event coming")
 	case "candidate":
-		log.Debug("candidate event coming")
+		r.log.Debug("candidate event coming")
 		user.Candidate(message)
 	case "answer":
-		log.Debug("answer event coming")
+		r.log.Debug("answer event coming")
 		user.Answer(message)
 		r.OnNewUser(user)
 	}
@@ -74,7 +78,6 @@ func (r *Room) OnNewUser( user *User) error{
 
 		user.Subscribe(u)
 	}
-
 	return nil
 }
 
