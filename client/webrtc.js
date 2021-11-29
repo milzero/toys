@@ -187,15 +187,6 @@ function createdDescription(description) {
         .setLocalDescription(description)
         .then(function () {
             var sdp = JSON.stringify(peerConnection.localDescription);
-            console.log(
-                JSON.stringify({
-                    event: "answer",
-                    room_id: uuid,
-                    user_id: roomId,
-                    data: sdp
-                })
-            );
-
             serverConnection.send(
                 JSON.stringify({
                     event: "answer",
@@ -215,7 +206,7 @@ function gotRemoteStream(event) {
         return;
     }
 
-    let el = document.createElement(event.track.kind)
+    var el = document.createElement(event.track.kind)
     el.srcObject = event.streams[0]
     el.autoplay = true;
     el.controls = true;

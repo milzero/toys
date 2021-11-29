@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/martian/log"
 	"github.com/milzero/toys/common"
+	"sync"
 
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
@@ -20,6 +21,8 @@ const (
 	Video MediaType = 2
 )
 
+type OnMediaReady func(*User)
+
 type User struct {
 	roomId       string
 	c            *transport.ThreadSafeWriter
@@ -28,9 +31,11 @@ type User struct {
 	userID       string
 	publishers   map[string]*User
 	log			 *logrus.Entry
+	room		 *Room
+	mtx  		sync.Mutex
 }
 
-func NewUser(roomId string, userID string, c *transport.ThreadSafeWriter) *User {
+func NewUser(roomId string, userID string, room *Room , c *transport.ThreadSafeWriter) *User {
 
 	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -42,6 +47,7 @@ func NewUser(roomId string, userID string, c *transport.ThreadSafeWriter) *User 
 		peer:         peerConnection,
 		remoteTracks: map[string]*webrtc.TrackLocalStaticRTP{},
 		publishers: map[string]*User{},
+		room: room,
 		log:  common.NewLog().WithField("roomId" , roomId).WithField("userId" , userID),
 	}
 
@@ -75,6 +81,29 @@ func (u *User) OnICECandidate(iceCandidate *webrtc.ICECandidate) {
 	}
 }
 
+func (u *User) Ready()  {
+	u.mtx.Lock()
+	var audio , video bool
+	for _, track := range u.remoteTracks {
+		typ := track.Kind()
+		switch typ {
+		case webrtc.RTPCodecTypeVideo:
+			video = true
+		case webrtc.RTPCodecTypeAudio:
+			audio = true
+		}
+	}
+
+	if audio && video {
+		u.log.Info("media ready")
+		if u.room != nil {
+			u.log.Info("media on ready")
+			u.room.OnMediaReady(u)
+		}
+	}
+	u.mtx.Unlock()
+}
+
 func (u *User) OnIceStatusChange(p webrtc.PeerConnectionState) {
 	switch p {
 	case webrtc.PeerConnectionStateFailed:
@@ -98,7 +127,6 @@ func (u *User) Offer() error {
 	if err != nil {
 		u.log.Errorf("CreateOffer Panic")
 		return fmt.Errorf("create offer failed  %s", err)
-
 	}
 
 	if err = u.peer.SetLocalDescription(offer); err != nil {
@@ -121,7 +149,6 @@ func (u *User) Offer() error {
 		u.log.Info("write offer to client failed : %s", err)
 		return fmt.Errorf("write offer to clienr failed : %s", err)
 	}
-
 	return nil
 }
 
@@ -204,10 +231,16 @@ func (u *User) Answer(message *protocol.Message) error {
 }
 
 func (u *User) OnTrack(t *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-	
+
 	trackLocal, _ := webrtc.NewTrackLocalStaticRTP(t.Codec().RTPCodecCapability, t.ID(), t.StreamID())
-	trackLocal.Kind()
-	u.remoteTracks[trackLocal.ID()] = trackLocal
+	f := func() {
+		u.mtx.Lock()
+		u.remoteTracks[trackLocal.ID()] = trackLocal
+		u.mtx.Unlock()
+	}
+
+	f()
+	u.Ready()
 	buf := make([]byte, 1500)
 	for {
 		i, _, err := t.Read(buf)
