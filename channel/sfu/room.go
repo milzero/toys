@@ -1,7 +1,9 @@
 package sfu
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/google/martian/log"
 	"github.com/milzero/toys/common"
 	"github.com/milzero/toys/protocol"
@@ -45,6 +47,7 @@ func (r *Room) OnMediaReady(user *User) {
 			continue
 		}
 		u.Subscribe(user)
+		log.Debugf("user %d -subscribe-> %s")
 	}
 }
 
@@ -61,10 +64,39 @@ func (r *Room) Handle(message *protocol.Message) error {
 	case "publish":
 		user.Publish()
 	case "unpublish":
+		user.UnPublish()
 		r.log.Debug("unpublish event coming")
 	case "subscribe":
+		subs :=  []protocol.Subscribe{}
+		err := json.Unmarshal( []byte(message.Data[:])  , subs)
+		if err != nil {
+			log.Errorf("subscrible user: %s" , err)
+			return fmt.Errorf("subscrible user: %s" , err)
+		}
+
+		for _, sub := range subs {
+			sub , ok := r.Users[sub.UserId]
+			if ok {
+				sub.Subscribe(user)
+			}
+		}
+
 		r.log.Debug("subscribe event coming")
 	case "unsubscribe":
+
+		subs :=  []protocol.Subscribe{}
+		err := json.Unmarshal( []byte(message.Data[:])  , subs)
+		if err != nil {
+			log.Errorf("subscrible user: %s" , err)
+			return fmt.Errorf("subscrible user: %s" , err)
+		}
+
+		for _, sub := range subs {
+			sub , ok := r.Users[sub.UserId]
+			if ok {
+				sub.Subscribe(user)
+			}
+		}
 		r.log.Debug("unsubscribe event coming")
 	case "candidate":
 		r.log.Debug("candidate event coming")

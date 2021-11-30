@@ -6,3 +6,8 @@ type Message struct {
 	UserID string `json:"user_id"`
 	Data   string `json:"data"`
 }
+
+type Subscribe struct {
+	UserId string
+	Medias []int
+}
