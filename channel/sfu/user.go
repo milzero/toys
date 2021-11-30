@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/martian/log"
 	"github.com/milzero/toys/common"
+
 	"sync"
 
 	"github.com/milzero/toys/protocol"
@@ -35,7 +36,7 @@ type User struct {
 	mtx  		sync.Mutex
 }
 
-func NewUser(roomId string, userID string, room *Room , c *transport.ThreadSafeWriter) *User {
+func NewUser(roomId string, userID string, room *Room, c *transport.ThreadSafeWriter) *User {
 
 	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
