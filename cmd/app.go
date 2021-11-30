@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
-	sfu2 "github.com/milzero/toys/channel/sfu"
+	channel "github.com/milzero/toys/channel"
 	common "github.com/milzero/toys/common"
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
@@ -28,12 +28,13 @@ var (
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-	sessions = map[string]*sfu2.User{}
+
+ 	Rooms = map[string]channel.Room{}
+
+	log = common.NewLog().WithField("module" , "main")
 )
 
-var Rooms = map[string]*sfu2.Room{}
 
-var log = common.NewLog().WithField("module" , "main")
 
 func main() {
 	flag.Parse()
@@ -55,7 +56,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	c := &transport.ThreadSafeWriter{unsafeConn, sync.Mutex{}}
 
 
-	var room *sfu2.Room
+	var room channel.Room
 	var userId string
 
 	defer func() {
@@ -84,13 +85,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Debugf("incoming message event %+v", message)
 
-
 		switch message.Event {
 		case "join":
 			roomId := message.RoomID
 			_, ok := Rooms[roomId]
 			if !ok {
-				room = sfu2.NewRoom(roomId)
+				room, _ = channel.NewRoom(channel.SFU  ,roomId)
 				Rooms[roomId] = room
 			}
 

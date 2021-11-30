@@ -5,6 +5,8 @@ import (
 	"github.com/milzero/toys/channel/datachannel"
 	"github.com/milzero/toys/channel/p2p"
 	"github.com/milzero/toys/channel/sfu"
+	"github.com/milzero/toys/protocol"
+	"github.com/milzero/toys/protocol/transport"
 )
 
 type  Type int
@@ -15,7 +17,9 @@ const (
 )
 
 type Room interface {
-	
+	Handle(*protocol.Message) error
+	AddUser(string, *transport.ThreadSafeWriter) error
+	DeleteUser(string2 string) error
 }
 
 type User interface {
