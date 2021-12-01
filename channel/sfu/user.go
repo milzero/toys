@@ -3,6 +3,7 @@ package sfu
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/google/martian/log"
 	"github.com/milzero/toys/common"
 
@@ -31,9 +32,9 @@ type User struct {
 	remoteTracks map[string]*webrtc.TrackLocalStaticRTP
 	userID       string
 	publishers   map[string]*User
-	log			 *logrus.Entry
-	room		 *Room
-	mtx  		sync.Mutex
+	log          *logrus.Entry
+	room         *Room
+	mtx          sync.Mutex
 }
 
 func NewUser(roomId string, userID string, room *Room, c *transport.ThreadSafeWriter) *User {
@@ -47,9 +48,9 @@ func NewUser(roomId string, userID string, room *Room, c *transport.ThreadSafeWr
 	u := &User{roomId: roomId, userID: userID, c: c,
 		peer:         peerConnection,
 		remoteTracks: map[string]*webrtc.TrackLocalStaticRTP{},
-		publishers: map[string]*User{},
-		room: room,
-		log:  common.NewLog().WithField("roomId" , roomId).WithField("userId" , userID),
+		publishers:   map[string]*User{},
+		room:         room,
+		log:          common.NewLog().WithField("roomId", roomId).WithField("userId", userID),
 	}
 
 	u.Init()
@@ -82,9 +83,9 @@ func (u *User) OnICECandidate(iceCandidate *webrtc.ICECandidate) {
 	}
 }
 
-func (u *User) Ready()  {
+func (u *User) Ready() {
 	u.mtx.Lock()
-	var audio , video bool
+	var audio, video bool
 	for _, track := range u.remoteTracks {
 		typ := track.Kind()
 		switch typ {
@@ -165,13 +166,12 @@ func (u *User) Publish() {
 	}
 
 	for _, sender := range u.peer.GetSenders() {
-		u.log.Info("sender is %+v" , sender)
+		u.log.Info("sender is %+v", sender)
 	}
 
 	for _, receiver := range u.peer.GetReceivers() {
-		u.log.Info("sender is %+v" , receiver)
+		u.log.Info("sender is %+v", receiver)
 	}
-
 
 	err := u.Offer()
 	if err != nil {
@@ -182,12 +182,15 @@ func (u *User) Publish() {
 func (u *User) UnPublish() {
 	for _, transceiver := range u.peer.GetTransceivers() {
 		transceiver.Stop()
+
 	}
 	u.Offer()
 }
 
-func (u *User) UnSubscribe() {
-
+func (u *User) UnSubscribe(user *User) {
+		for _, sender := range u.peer.GetSenders() {
+			u.peer.RemoveTrack(sender)
+		}
 }
 
 func (u *User) Subscribe(user *User) {
@@ -198,7 +201,7 @@ func (u *User) Subscribe(user *User) {
 	}
 
 	if _, ok := u.publishers[user.userID]; !ok {
-		var  tracks = 0
+		var tracks = 0
 		for _, track := range user.remoteTracks {
 			u.peer.AddTrack(track)
 			tracks = tracks + 1
