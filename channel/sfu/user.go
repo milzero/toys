@@ -164,6 +164,15 @@ func (u *User) Publish() {
 		}
 	}
 
+	for _, sender := range u.peer.GetSenders() {
+		u.log.Info("sender is %+v" , sender)
+	}
+
+	for _, receiver := range u.peer.GetReceivers() {
+		u.log.Info("sender is %+v" , receiver)
+	}
+
+
 	err := u.Offer()
 	if err != nil {
 		u.log.Info(err)
@@ -171,7 +180,10 @@ func (u *User) Publish() {
 }
 
 func (u *User) UnPublish() {
-
+	for _, transceiver := range u.peer.GetTransceivers() {
+		transceiver.Stop()
+	}
+	u.Offer()
 }
 
 func (u *User) UnSubscribe() {
