@@ -3,6 +3,7 @@ package sfu
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pion/rtcp"
 
 	"github.com/google/martian/log"
 	"github.com/milzero/toys/common"
@@ -104,6 +105,23 @@ func (u *User) Ready() {
 		}
 	}
 	u.mtx.Unlock()
+	u.DispatchKeyFrame()
+}
+
+func (u *User) DispatchKeyFrame() {
+
+	for _, receiver := range u.peer.GetReceivers() {
+		if receiver.Track() == nil {
+			continue
+		}
+
+		_ = u.peer.WriteRTCP([]rtcp.Packet{
+			&rtcp.PictureLossIndication{
+				MediaSSRC: uint32(receiver.Track().SSRC()),
+			},
+		})
+	}
+
 }
 
 func (u *User) OnIceStatusChange(p webrtc.PeerConnectionState) {
@@ -182,15 +200,14 @@ func (u *User) Publish() {
 func (u *User) UnPublish() {
 	for _, transceiver := range u.peer.GetTransceivers() {
 		transceiver.Stop()
-
 	}
 	u.Offer()
 }
 
 func (u *User) UnSubscribe(user *User) {
-		for _, sender := range u.peer.GetSenders() {
-			u.peer.RemoveTrack(sender)
-		}
+	for _, sender := range user.peer.GetSenders() {
+		u.peer.RemoveTrack(sender)
+	}
 }
 
 func (u *User) Subscribe(user *User) {
@@ -213,10 +230,12 @@ func (u *User) Subscribe(user *User) {
 			}
 		}
 
+		u.DispatchKeyFrame()
 	} else {
 		u.log.Warnf("%s have subscribe %s", u.userID, user.userID)
 	}
 
+	u.DispatchKeyFrame()
 }
 
 func (u *User) Candidate(message *protocol.Message) {

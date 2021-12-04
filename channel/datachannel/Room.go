@@ -9,14 +9,14 @@ import (
 
 type Room struct {
 	Users  map[string]*User
-	RoomId string
+	roomId string
 	log    *logrus.Entry
 }
 
 func NewRoom(roomId string) *Room {
 	return &Room{
 		Users:  map[string]*User{},
-		RoomId: roomId,
+		roomId: roomId,
 		log:    common.NewLog().WithField("roomId", roomId),
 	}
 }
@@ -31,3 +31,10 @@ func (r *Room) DeleteUser(string2 string) error {
 	return nil
 }
 
+func (r *Room) RoomId() string {
+	return ""
+}
+
+func (r *Room) UserCount() int {
+	return 0
+}

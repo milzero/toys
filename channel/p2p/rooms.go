@@ -9,16 +9,22 @@ import (
 
 type Room struct {
 	Users  map[string]*User
-	RoomId string
+	roomId string
 	log    *logrus.Entry
 }
 
 func NewRoom(roomId string) *Room {
 	return &Room{
 		Users:  map[string]*User{},
-		RoomId: roomId,
+		roomId: roomId,
 		log:    common.NewLog().WithField("roomId", roomId),
 	}
+}
+func (r *Room) UserCount() int {
+	return 0
+}
+func (r *Room) RoomId() string {
+	return ""
 }
 
 func (r *Room) Handle(*protocol.Message) error {

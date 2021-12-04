@@ -3,8 +3,8 @@ var localStream;
 var remoteVideo;
 var peerConnection;
 var uuid;
-var roomId;
-var serverConnection;
+let roomId;
+let serverConnection;
 
 var peerConnectionConfig = {
     iceServers: [{
@@ -22,7 +22,7 @@ function pageReady() {
     roomId = document.getElementById("roomId").value;
 
     serverConnection = new WebSocket(
-        "ws://127.0.0.1:8080/"
+        "ws://127.0.0.1:8080/webrtc"
     );
     serverConnection.onmessage = gotMessageFromServer;
 

@@ -13,21 +13,29 @@ import (
 
 type Room struct {
 	Users  map[string]*User
-	RoomId string
+	roomId string
 	log    *logrus.Entry
 }
 
 func NewRoom(roomId string) *Room {
 	return &Room{
 		Users:  map[string]*User{},
-		RoomId: roomId,
+		roomId: roomId,
 		log:    common.NewLog().WithField("roomId", roomId),
 	}
 }
 
+func (r *Room) UserCount() int {
+	return len(r.Users)
+}
+
+func (r *Room) RoomId() string {
+	return r.roomId
+}
+
 func (r *Room) AddUser(userId string, c *transport.ThreadSafeWriter) error {
 	if _, ok := r.Users[userId]; !ok {
-		user := NewUser(r.RoomId, userId, r ,c)
+		user := NewUser(r.roomId, userId, r, c)
 		r.Users[userId] = user
 	}
 	return nil
@@ -67,15 +75,15 @@ func (r *Room) Handle(message *protocol.Message) error {
 		user.UnPublish()
 		r.log.Debug("unpublish event coming")
 	case "subscribe":
-		subs :=  []protocol.Subscribe{}
-		err := json.Unmarshal( []byte(message.Data[:])  , subs)
+		subs := []protocol.Subscribe{}
+		err := json.Unmarshal([]byte(message.Data[:]), subs)
 		if err != nil {
-			log.Errorf("subscrible user: %s" , err)
-			return fmt.Errorf("subscrible user: %s" , err)
+			log.Errorf("subscrible user: %s", err)
+			return fmt.Errorf("subscrible user: %s", err)
 		}
 
 		for _, sub := range subs {
-			sub , ok := r.Users[sub.UserId]
+			sub, ok := r.Users[sub.UserId]
 			if ok {
 				sub.Subscribe(user)
 			}
@@ -84,15 +92,15 @@ func (r *Room) Handle(message *protocol.Message) error {
 		r.log.Debug("subscribe event coming")
 	case "unsubscribe":
 
-		subs :=  []protocol.Subscribe{}
-		err := json.Unmarshal( []byte(message.Data[:])  , subs)
+		subs := []protocol.Subscribe{}
+		err := json.Unmarshal([]byte(message.Data[:]), subs)
 		if err != nil {
-			log.Errorf("subscrible user: %s" , err)
-			return fmt.Errorf("subscrible user: %s" , err)
+			log.Errorf("subscrible user: %s", err)
+			return fmt.Errorf("subscrible user: %s", err)
 		}
 
 		for _, sub := range subs {
-			sub , ok := r.Users[sub.UserId]
+			sub, ok := r.Users[sub.UserId]
 			if ok {
 				sub.Subscribe(user)
 			}
