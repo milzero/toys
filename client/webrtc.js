@@ -53,8 +53,8 @@ function publish() {
     serverConnection.send(
         JSON.stringify({
             event: "publish",
-            room_id: uuid,
-            user_id: roomId,
+            room_id: roomId,
+            user_id:  uuid,
             data: '{"video": "true","audio": "true",}'
         })
     );
@@ -69,8 +69,8 @@ function join() {
     serverConnection.send(
         JSON.stringify({
             event: "join",
-            room_id: uuid,
-            user_id: roomId,
+            room_id: roomId,
+            user_id:  uuid,
             data: data,
         })
     );
@@ -80,8 +80,8 @@ function unPublish() {
     serverConnection.send(
         JSON.stringify({
             event: "unPublish",
-            room_id: uuid,
-            user_id: roomId,
+            room_id: roomId,
+            user_id:  uuid,
             data: {
                 video: true,
                 audio: true,
@@ -94,8 +94,8 @@ function subscribe() {
     serverConnection.send(
         JSON.stringify({
             event: "unPublish",
-            room_id: uuid,
-            user_id: roomId,
+            room_id: roomId,
+            user_id:  uuid,
             users: [],
             data: {
                 video: true,
@@ -109,8 +109,8 @@ function unSubscribe() {
     serverConnection.send(
         JSON.stringify({
             event: "unPublish",
-            room_id: uuid,
-            user_id: roomId,
+            room_id: roomId,
+            user_id:  uuid,
             users: [],
             data: {
                 video: true,
@@ -165,16 +165,16 @@ function gotIceCandidate(event) {
         console.log(
             JSON.stringify({
                 event: "candidate",
-                room_id: uuid,
-                user_id: roomId,
+                room_id:  roomId,
+                user_id: uuid,
                 data: ice
             })
         );
         serverConnection.send(
             JSON.stringify({
                 event: "candidate",
-                room_id: uuid,
-                user_id: roomId,
+                room_id: roomId,
+                user_id:  uuid,
                 data: ice
             })
         );
@@ -190,8 +190,8 @@ function createdDescription(description) {
             serverConnection.send(
                 JSON.stringify({
                     event: "answer",
-                    room_id: uuid,
-                    user_id: roomId,
+                    room_id: roomId,
+                    user_id:  uuid,
                     data: sdp
                 })
             );

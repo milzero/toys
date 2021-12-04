@@ -3,6 +3,8 @@ package sfu
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/pion/rtcp"
 
 	"github.com/google/martian/log"
@@ -58,7 +60,7 @@ func NewUser(roomId string, userID string, room *Room, c *transport.ThreadSafeWr
 	return u
 }
 
-func (u User) Init() {
+func (u *User) Init() {
 	u.peer.OnICECandidate(u.OnICECandidate)
 	u.peer.OnTrack(u.OnTrack)
 	u.peer.OnConnectionStateChange(u.OnIceStatusChange)
@@ -106,6 +108,10 @@ func (u *User) Ready() {
 	}
 	u.mtx.Unlock()
 	u.DispatchKeyFrame()
+
+	common.NewTicker(time.Second, func(i ...interface{}) {
+		u.DispatchKeyFrame()
+	})
 }
 
 func (u *User) DispatchKeyFrame() {
