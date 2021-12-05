@@ -20,3 +20,5 @@ go.sum
 .idea
 *.log
 mini.log
+.DS_Store
+mini.log

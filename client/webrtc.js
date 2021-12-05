@@ -54,7 +54,7 @@ function publish() {
         JSON.stringify({
             event: "publish",
             room_id: roomId,
-            user_id:  uuid,
+            user_id: uuid,
             data: '{"video": "true","audio": "true",}'
         })
     );
@@ -70,7 +70,7 @@ function join() {
         JSON.stringify({
             event: "join",
             room_id: roomId,
-            user_id:  uuid,
+            user_id: uuid,
             data: data,
         })
     );
@@ -81,7 +81,7 @@ function unPublish() {
         JSON.stringify({
             event: "unPublish",
             room_id: roomId,
-            user_id:  uuid,
+            user_id: uuid,
             data: {
                 video: true,
                 audio: true,
@@ -95,7 +95,7 @@ function subscribe() {
         JSON.stringify({
             event: "unPublish",
             room_id: roomId,
-            user_id:  uuid,
+            user_id: uuid,
             users: [],
             data: {
                 video: true,
@@ -110,7 +110,7 @@ function unSubscribe() {
         JSON.stringify({
             event: "unPublish",
             room_id: roomId,
-            user_id:  uuid,
+            user_id: uuid,
             users: [],
             data: {
                 video: true,
@@ -122,10 +122,10 @@ function unSubscribe() {
 
 function start(isCaller) {
     peerConnection = new RTCPeerConnection(peerConnectionConfig);
-
     peerConnection.onicecandidate = gotIceCandidate;
     peerConnection.ontrack = gotRemoteStream;
     peerConnection.addStream(localStream);
+    window.setInterval(getStatus , 1000)
 }
 
 function gotMessageFromServer(message) {
@@ -165,7 +165,7 @@ function gotIceCandidate(event) {
         console.log(
             JSON.stringify({
                 event: "candidate",
-                room_id:  roomId,
+                room_id: roomId,
                 user_id: uuid,
                 data: ice
             })
@@ -174,7 +174,7 @@ function gotIceCandidate(event) {
             JSON.stringify({
                 event: "candidate",
                 room_id: roomId,
-                user_id:  uuid,
+                user_id: uuid,
                 data: ice
             })
         );
@@ -191,7 +191,7 @@ function createdDescription(description) {
                 JSON.stringify({
                     event: "answer",
                     room_id: roomId,
-                    user_id:  uuid,
+                    user_id: uuid,
                     data: sdp
                 })
             );
@@ -227,4 +227,29 @@ function gotRemoteStream(event) {
 
 function errorHandler(error) {
     console.log(error);
+}
+
+function getStatus() {
+    if(peerConnection == null){
+        console.error("peer connect is null")
+        return
+    }
+
+    peerConnection.getStats(peerConnection.streams[0]).then(stats => {
+        let statsOutput = "status";
+        console.log(stats)
+        stats.forEach(report => {
+            statsOutput += `<h2>Report: ${report.type}</h2>\n<strong>ID:</strong> ${report.id}<br>\n` +
+                `<strong>Timestamp:</strong> ${report.timestamp}<br>\n`;
+
+
+            Object.keys(report).forEach(statName => {
+                if (statName !== "id" && statName !== "timestamp" && statName !== "type") {
+                    statsOutput += `<strong>${statName}:</strong> ${report[statName]}<br>\n`;
+                }
+            });
+        });
+
+        document.querySelector(".stats-box").innerHTML = statsOutput;
+    });
 }
