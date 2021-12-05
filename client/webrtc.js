@@ -1,8 +1,10 @@
-var localVideo;
-var localStream;
-var remoteVideo;
-var peerConnection;
-var uuid;
+"use strict";
+
+let localVideo;
+let localStream;
+let remoteVideo;
+let peerConnection;
+let uuid;
 let roomId;
 let serverConnection;
 
@@ -11,7 +13,7 @@ var peerConnectionConfig = {
         urls: "turn:101.35.111.10:3478",
         username: "daozhao",
         credential: "12345",
-    }, ],
+    },],
 };
 
 function pageReady() {
@@ -26,12 +28,10 @@ function pageReady() {
     );
     serverConnection.onmessage = gotMessageFromServer;
 
-
-    var constraints = {
+    let constraints = {
         video: true,
         audio: true,
     };
-
 
     if (navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices
@@ -130,15 +130,15 @@ function start(isCaller) {
 
 function gotMessageFromServer(message) {
     if (!peerConnection) start(false);
-    var signal = JSON.parse(message.data);
+    let signal = JSON.parse(message.data);
     console.log(signal);
 
     // Ignore messages from ourself
     if (signal.uuid == uuid) return;
-    var event = signal.data;
+    let event = signal.data;
 
     if (signal.event == "offer") {
-        offer = JSON.parse(signal.data);
+        let offer = JSON.parse(signal.data);
         peerConnection
             .setRemoteDescription(new RTCSessionDescription(offer))
             .then(function () {
@@ -152,7 +152,7 @@ function gotMessageFromServer(message) {
             })
             .catch(errorHandler);
     } else if (signal.event == "candidate") {
-        var ice = JSON.parse(signal.data);
+        let ice = JSON.parse(signal.data);
         peerConnection
             .addIceCandidate(new RTCIceCandidate(ice))
             .catch(errorHandler);
@@ -161,7 +161,7 @@ function gotMessageFromServer(message) {
 
 function gotIceCandidate(event) {
     if (event.candidate != null) {
-        var ice = JSON.stringify(event.candidate);
+        let ice = JSON.stringify(event.candidate);
         console.log(
             JSON.stringify({
                 event: "candidate",
@@ -186,7 +186,7 @@ function createdDescription(description) {
     peerConnection
         .setLocalDescription(description)
         .then(function () {
-            var sdp = JSON.stringify(peerConnection.localDescription);
+            let sdp = JSON.stringify(peerConnection.localDescription);
             serverConnection.send(
                 JSON.stringify({
                     event: "answer",
@@ -206,7 +206,7 @@ function gotRemoteStream(event) {
         return;
     }
 
-    var el = document.createElement(event.track.kind)
+    let el = document.createElement(event.track.kind)
     el.srcObject = event.streams[0]
     el.autoplay = true;
     el.controls = true;
@@ -230,14 +230,19 @@ function errorHandler(error) {
 }
 
 function getStatus() {
-    if(peerConnection == null){
+
+    if (peerConnection == null) {
         console.error("peer connect is null")
         return
     }
 
-    peerConnection.getStats(peerConnection.streams[0]).then(stats => {
+    let senders = peerConnection.getSenders();
+    console.log("size of senders is ", senders.length);
+
+    peerConnection.getStats(function (stats) {
         let statsOutput = "status";
-        console.log(stats)
+        console.log("status is:", stats);
+
         stats.forEach(report => {
             statsOutput += `<h2>Report: ${report.type}</h2>\n<strong>ID:</strong> ${report.id}<br>\n` +
                 `<strong>Timestamp:</strong> ${report.timestamp}<br>\n`;
@@ -251,5 +256,5 @@ function getStatus() {
         });
 
         document.querySelector(".stats-box").innerHTML = statsOutput;
-    });
+    })
 }
