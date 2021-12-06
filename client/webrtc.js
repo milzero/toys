@@ -42,11 +42,13 @@ function pageReady() {
         alert("Your browser does not support getUserMedia API");
     }
 
+
 }
 
 function getUserMediaSuccess(stream) {
     localStream = stream;
     localVideo.srcObject = stream;
+    window.setInterval(getStatus, 1000 * 10)
 }
 
 function publish() {
@@ -62,7 +64,7 @@ function publish() {
 
 function join() {
 
-    var data = JSON.stringify({
+    let data = JSON.stringify({
         video: true,
         audio: true,
     });
@@ -120,16 +122,15 @@ function unSubscribe() {
     );
 }
 
-function start(isCaller) {
+function start() {
     peerConnection = new RTCPeerConnection(peerConnectionConfig);
     peerConnection.onicecandidate = gotIceCandidate;
     peerConnection.ontrack = gotRemoteStream;
     peerConnection.addStream(localStream);
-    window.setInterval(getStatus , 1000)
 }
 
 function gotMessageFromServer(message) {
-    if (!peerConnection) start(false);
+    if (!peerConnection) start();
     let signal = JSON.parse(message.data);
     console.log(signal);
 
@@ -162,14 +163,6 @@ function gotMessageFromServer(message) {
 function gotIceCandidate(event) {
     if (event.candidate != null) {
         let ice = JSON.stringify(event.candidate);
-        console.log(
-            JSON.stringify({
-                event: "candidate",
-                room_id: roomId,
-                user_id: uuid,
-                data: ice
-            })
-        );
         serverConnection.send(
             JSON.stringify({
                 event: "candidate",
@@ -232,29 +225,36 @@ function errorHandler(error) {
 function getStatus() {
 
     if (peerConnection == null) {
-        console.error("peer connect is null")
-        return
+        console.error("peer connect is null");
+        return;
     }
 
     let senders = peerConnection.getSenders();
     console.log("size of senders is ", senders.length);
 
-    peerConnection.getStats(function (stats) {
-        let statsOutput = "status";
-        console.log("status is:", stats);
+    //let videoTrack =  peerConnection.getVideoTracks()[0]
 
-        stats.forEach(report => {
-            statsOutput += `<h2>Report: ${report.type}</h2>\n<strong>ID:</strong> ${report.id}<br>\n` +
-                `<strong>Timestamp:</strong> ${report.timestamp}<br>\n`;
+    peerConnection.getStats().then(function () {
+
+        (async () => {
+            let statsOutput = "";
+            const report = await peerConnection.getStats();
+            for (let dictionary of report.values()) {
+                console.log(dictionary.type);
+                console.log('  id: ' + dictionary.id);
+                console.log('  timestamp: ' + dictionary.timestamp);
+                Object.keys(dictionary).forEach(key => {
+                    if (key != 'type' && key != 'id' && key != 'timestamp') {
+                        console.log('  ' + key + ': ' + dictionary[key]);
+                        statsOutput = statsOutput + '  ' + key + ': ' + dictionary[key] + '\r\n'
+                    }
+                });
+
+                statsOutput = statsOutput + '--------------------------------------------' + '\r\n';
+                document.getElementById('.stats-box').innerHTML = statsOutput;
+            }
+        })();
 
 
-            Object.keys(report).forEach(statName => {
-                if (statName !== "id" && statName !== "timestamp" && statName !== "type") {
-                    statsOutput += `<strong>${statName}:</strong> ${report[statName]}<br>\n`;
-                }
-            });
-        });
-
-        document.querySelector(".stats-box").innerHTML = statsOutput;
     })
 }
