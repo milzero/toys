@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"net/http"
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"github.com/milzero/toys/channel"
 	"github.com/milzero/toys/common"
 	"github.com/milzero/toys/protocol"
 	"github.com/milzero/toys/protocol/transport"
-	"net/http"
-	"sync"
 )
 
 const title = `\r\n

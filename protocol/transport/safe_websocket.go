@@ -1,8 +1,9 @@
 package transport
 
 import (
-	"github.com/gorilla/websocket"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 type ThreadSafeWriter struct {
