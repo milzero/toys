@@ -233,6 +233,7 @@ func (u *User) Subscribe(user *User) {
 			err := u.Offer()
 			if err == nil {
 				u.publishers[user.userID] = user
+				u.log.Debugf("%s have subscribe %s", u.userID, user.userID)
 			}
 		}
 
@@ -286,9 +287,11 @@ func (u *User) OnTrack(t *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 	for {
 		i, _, err := t.Read(buf)
 		if err != nil {
+			u.log.Warnf("write to recive failed")
 			return
 		}
 		if _, err = trackLocal.Write(buf[:i]); err != nil {
+			u.log.Warnf("write to recive failed")
 			return
 		}
 	}

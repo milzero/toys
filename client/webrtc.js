@@ -24,7 +24,7 @@ function pageReady() {
     roomId = document.getElementById("roomId").value;
 
     serverConnection = new WebSocket(
-        "ws://127.0.0.1:8080/webrtc"
+        "ws://127.0.0.1:18080/webrtc"
     );
     serverConnection.onmessage = gotMessageFromServer;
 
@@ -210,8 +210,8 @@ function gotRemoteStream(event) {
     }
 
     event.streams[0].onremovetrack = ({
-        track
-    }) => {
+                                          track
+                                      }) => {
         if (el.parentNode) {
             el.parentNode.removeChild(el);
         }

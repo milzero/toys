@@ -1,10 +1,11 @@
 package common
 
 import (
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func NewLog() *logrus.Logger {
@@ -37,8 +38,8 @@ func NewLog() *logrus.Logger {
 		FieldMap:                  nil,
 		CallerPrettyfier:          nil,
 	})
+	log.SetReportCaller(true)
 	log.SetLevel(logrus.DebugLevel)
 
 	return log
 }
-
