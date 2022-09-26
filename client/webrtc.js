@@ -222,7 +222,6 @@ function errorHandler(error) {
     console.log(error);
 }
 
-
 function getStatus() {
     if (peerConnection == null) {
         console.error('peer connect is null');
@@ -232,7 +231,6 @@ function getStatus() {
     let senders = peerConnection.getSenders();
     console.log('size of senders is ', senders.length);
     peerConnection.getStats().then(function () {
-
         (async () => {
             let statsOutput = '';
             const report = await peerConnection.getStats();
@@ -251,33 +249,5 @@ function getStatus() {
             document.getElementById('.stats-box').innerHTML = statsOutput;
             console.log(statsOutput)
         })();
-
-    let senders = peerConnection.getSenders();
-    console.log("size of senders is ", senders.length);
-
-    //let videoTrack =  peerConnection.getVideoTracks()[0]
-
-    peerConnection.getStats().then(function () {
-
-        (async () => {
-            let statsOutput = "";
-            const report = await peerConnection.getStats();
-            for (let dictionary of report.values()) {
-                console.log(dictionary.type);
-                console.log('  id: ' + dictionary.id);
-                console.log('  timestamp: ' + dictionary.timestamp);
-                Object.keys(dictionary).forEach(key => {
-                    if (key != 'type' && key != 'id' && key != 'timestamp') {
-                        console.log('  ' + key + ': ' + dictionary[key]);
-                        statsOutput = statsOutput + '  ' + key + ': ' + dictionary[key] + '\r\n'
-                    }
-                });
-
-                statsOutput = statsOutput + '--------------------------------------------' + '\r\n';
-                document.getElementById('.stats-box').innerHTML = statsOutput;
-            }
-        })();
-
     })
-
 }
