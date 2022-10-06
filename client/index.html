@@ -13,7 +13,21 @@
     <button onclick="join()" type="button">join</button>
     <button onclick="publish()" type="button">Publish</button>
     <button type="button">exit</button>
+    <div class="select">
+        <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+    </div>
+
+    <div class="select">
+        <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
+    </div>
+
+    <div class="select">
+        <label for="videoSource">Video source: </label><select id="videoSource"></select>
+    </div>
 </div>
+
+
+
 <h3>Local Video</h3>
 <video autoplay height="120" id="localVideo" muted width="160"></video>
 
