@@ -158,7 +158,6 @@ func (u *User) Offer() error {
 	if err = u.peer.SetLocalDescription(offer); err != nil {
 		u.log.Errorf("SetLocalDescription  %v , %s", err, u.c.RemoteAddr().String())
 		return fmt.Errorf("SetLocalDescription  %v , %s", err, u.c.RemoteAddr().String())
-
 	}
 
 	offerString, err := json.Marshal(offer)

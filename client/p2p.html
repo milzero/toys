@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8"/>
+    <script src="p2p.js" type="text/javascript"></script>
+</head>
+
+<body>
+<div>
+    <label> uid: <input id="uid" type="text"/></label>
+    <label> roomId: <input id="roomId" type="text"/></label>
+    <button onclick="pageReady()" type="button">init</button>
+    <button onclick="join()" type="button">join</button>
+    <button onclick="publish()" type="button">Publish</button>
+    <button type="button">exit</button>
+    <div class="select">
+        <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+    </div>
+
+    <div class="select">
+        <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
+    </div>
+
+    <div class="select">
+        <label for="videoSource">Video source: </label><select id="videoSource"></select>
+    </div>
+</div>
+
+
+
+<h3>Local Video</h3>
+<video autoplay height="120" id="localVideo" muted width="160"></video>
+
+<h3>Remote Video</h3>
+<div id="remoteVideos"></div>
+
+<h3>status</h3>
+<div id=".stats-box"></div>
+</body>
+
+<script></script>
+
+</html>

@@ -14,11 +14,9 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-mini.log
+*.log
 go.sum
 .vscode
 .idea
 *.log
-mini.log
 .DS_Store
-mini.log
