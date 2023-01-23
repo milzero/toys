@@ -57,6 +57,20 @@ var peerConnectionConfig = {
     ],
 };
 
+function join() {
+    let data = JSON.stringify({
+        video: true,
+        audio: true,
+    });
+    serverConnection.send(
+        JSON.stringify({
+            event: "join",
+            room_id: roomId,
+            user_id: uuid,
+            data: data,
+        })
+    );
+}
 
 function gotDevices(deviceInfos) {
 
@@ -106,14 +120,14 @@ function call() {
         .then((offer) => peerConnection.setLocalDescription(offer))
         .then(() => {
             serverConnection.send({
-                event: "publish",
+                event: "offer",
                 room_id: roomId,
                 user_id: uuid,
                 sdp: peerConnection.localDescription
             });
         })
         .catch((reason) => {
-            // An error occurred, so handle the failure to connect
+            console.log("create offer  faile :" + reason);
         });
 }
 
@@ -123,14 +137,14 @@ function answer() {
         .then((offer) => peerConnection.setLocalDescription(offer))
         .then(() => {
             serverConnection.send({
-                event: "publish",
+                event: "answer",
                 room_id: roomId,
                 user_id: uuid,
                 sdp: peerConnection.localDescription
             });
         })
         .catch((reason) => {
-            // An error occurred, so handle the failure to connect
+            console.log("create offer  faile :" + reason);
         });
 }
 
@@ -182,79 +196,10 @@ function pageReady() {
 function getUserMediaSuccess(stream) {
     localStream = stream;
     localVideo.srcObject = stream;
-    //window.setInterval(getStatus, 1000 * 10);
     return navigator.mediaDevices.enumerateDevices();
 }
 
-function publish() {
-    serverConnection.send(
-        JSON.stringify({
-            event: "publish",
-            room_id: roomId,
-            user_id: uuid,
-            data: '{"video": "true","audio": "true",}',
-        })
-    );
-}
 
-function join() {
-    let data = JSON.stringify({
-        video: true,
-        audio: true,
-    });
-    serverConnection.send(
-        JSON.stringify({
-            event: "join",
-            room_id: roomId,
-            user_id: uuid,
-            data: data,
-        })
-    );
-}
-
-function unPublish() {
-    serverConnection.send(
-        JSON.stringify({
-            event: "unPublish",
-            room_id: roomId,
-            user_id: uuid,
-            data: {
-                video: true,
-                audio: true,
-            },
-        })
-    );
-}
-
-function subscribe() {
-    serverConnection.send(
-        JSON.stringify({
-            event: "unPublish",
-            room_id: roomId,
-            user_id: uuid,
-            users: [],
-            data: {
-                video: true,
-                audio: true,
-            },
-        })
-    );
-}
-
-function unSubscribe() {
-    serverConnection.send(
-        JSON.stringify({
-            event: "unPublish",
-            room_id: roomId,
-            user_id: uuid,
-            users: [],
-            data: {
-                video: true,
-                audio: true,
-            },
-        })
-    );
-}
 
 function start() {
     peerConnection = new RTCPeerConnection(peerConnectionConfig);
@@ -352,32 +297,3 @@ function errorHandler(error) {
     console.log(error);
 }
 
-function getStatus() {
-    if (peerConnection == null) {
-        console.error("peer connect is null");
-        return;
-    }
-
-    let senders = peerConnection.getSenders();
-    console.log("size of senders is ", senders.length);
-    peerConnection.getStats().then(function () {
-        (async () => {
-            let statsOutput = "";
-            const report = await peerConnection.getStats();
-            for (let dictionary of report.values()) {
-                console.log(dictionary);
-                statsOutput = '<p>' + dictionary.type + '</p>';
-                statsOutput = statsOutput + '<p>' + dictionary.type + '</p>';
-                statsOutput = statsOutput + '<p>' + '  timestamp: ' + dictionary.timestamp + '</p>';
-                Object.keys(dictionary).forEach(key => {
-                    if (key != 'type' && key != 'id' && key != 'timestamp') {
-                        statsOutput = statsOutput + '<p>' + '  ' + key + ': ' + dictionary[key] + '</p>'
-                    }
-                });
-            }
-
-            document.getElementById(".stats-box").innerHTML = statsOutput;
-            console.log(statsOutput);
-        })();
-    });
-}

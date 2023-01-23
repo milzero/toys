@@ -1,6 +1,11 @@
 package p2p
 
-import "github.com/milzero/toys/protocol/transport"
+import (
+	"fmt"
+
+	"github.com/milzero/toys/protocol"
+	"github.com/milzero/toys/protocol/transport"
+)
 
 type User struct {
 	UserId string
@@ -16,4 +21,13 @@ func NewUser(roomId string, userID string, room *Room, c *transport.ThreadSafeWr
 		room:   room,
 		c:      c,
 	}
+}
+
+func (u *User) pass(message *protocol.Message) error {
+	if u.c == nil {
+		return fmt.Errorf("transport is nil")
+	}
+
+	u.c.WriteJSON(message)
+	return nil
 }
