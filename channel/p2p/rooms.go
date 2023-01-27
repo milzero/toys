@@ -33,15 +33,19 @@ func (r *Room) RoomId() string {
 func (r *Room) Handle(message *protocol.Message) error {
 	r.log.Debugf("incoming message %v", message)
 	userId := message.UserID
-	user, ok := r.Users[userId]
+	_, ok := r.Users[userId]
 	if !ok {
 		return errors.New("have no user in room")
 	}
 
 	event := message.Event
 	switch event {
-	case "pass":
-		user.pass(message)
+	default:
+		for otherId, other := range r.Users {
+			if otherId != userId {
+				other.pass(message)
+			}
+		}
 	}
 
 	return nil

@@ -41,7 +41,7 @@ function changeAudioDestination() {
 
 function handleError(error) {
     console.log(
-        "navigator.MediaDevices.getUserMedia error: ",
+        "error: ",
         error.message,
         error.name
     );
@@ -73,8 +73,6 @@ function join() {
 }
 
 function gotDevices(deviceInfos) {
-
-    // Handles being called several times to update labels. Preserve values.
     const values = selectors.map((select) => select.value);
     selectors.forEach((select) => {
         while (select.firstChild) {
@@ -119,12 +117,12 @@ function call() {
     peerConnection.createOffer()
         .then((offer) => peerConnection.setLocalDescription(offer))
         .then(() => {
-            serverConnection.send({
+            serverConnection.send(JSON.stringify({
                 event: "offer",
                 room_id: roomId,
                 user_id: uuid,
-                sdp: peerConnection.localDescription
-            });
+                sdp: peerConnection.localDescription,
+            }));
         })
         .catch((reason) => {
             console.log("create offer  faile :" + reason);
@@ -136,12 +134,13 @@ function answer() {
     peerConnection.createOffer()
         .then((offer) => peerConnection.setLocalDescription(offer))
         .then(() => {
-            serverConnection.send({
+            serverConnection.send(JSON.stringify({
                 event: "answer",
                 room_id: roomId,
                 user_id: uuid,
-                sdp: peerConnection.localDescription
-            });
+                sdp: peerConnection.localDescription,
+            }));
+            console.log("answer send");
         })
         .catch((reason) => {
             console.log("create offer  faile :" + reason);
@@ -188,6 +187,9 @@ function pageReady() {
     navigator.mediaDevices.enumerateDevices().then(gotDevices).catch(handleError);
     setMediaSource();
     connect();
+    peerConnection = new RTCPeerConnection(peerConnectionConfig);
+    peerConnection.onicecandidate = gotIceCandidate;
+    peerConnection.ontrack = gotRemoteStream;
     audioInputSelect.onchange = setMediaSource;
     audioOutputSelect.onchange = changeAudioDestination;
     videoSelect.onchange = setMediaSource;
@@ -199,36 +201,26 @@ function getUserMediaSuccess(stream) {
     return navigator.mediaDevices.enumerateDevices();
 }
 
-
-
-function start() {
-    peerConnection = new RTCPeerConnection(peerConnectionConfig);
-    peerConnection.onicecandidate = gotIceCandidate;
-    peerConnection.ontrack = gotRemoteStream;
-    peerConnection.addStream(localStream);
-}
-
 function gotMessageFromServer(message) {
-    if (!peerConnection) start();
     let signal = JSON.parse(message.data);
     console.log(signal);
-
-    // Ignore messages from ourself
     if (signal.uuid == uuid) return;
-    let event = signal.data;
-
     if (signal.event == "offer") {
-        let offer = JSON.parse(signal.data);
         peerConnection
-            .setRemoteDescription(new RTCSessionDescription(offer))
+            .setRemoteDescription(new RTCSessionDescription(signal.sdp))
             .then(function () {
-                if (offer.type == "offer") {
+                if (signal.sdp.type == "offer") {
                     peerConnection
                         .createAnswer()
                         .then(createdDescription)
                         .catch(errorHandler);
                 }
             })
+            .catch(errorHandler);
+    } else if (signal.event === 'answer') {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp)).then(function () {
+            console.log("got answer and  setRemoteDescription");
+        })
             .catch(errorHandler);
     } else if (signal.event == "candidate") {
         let ice = JSON.parse(signal.data);
@@ -239,6 +231,7 @@ function gotMessageFromServer(message) {
 }
 
 function gotIceCandidate(event) {
+    console.log("got ice candidate" , event);
     if (event.candidate != null) {
         let ice = JSON.stringify(event.candidate);
         serverConnection.send(
@@ -253,19 +246,19 @@ function gotIceCandidate(event) {
 }
 
 function createdDescription(description) {
-    console.log("got description");
+    console.log("created description");
     peerConnection
         .setLocalDescription(description)
         .then(function () {
-            let sdp = JSON.stringify(peerConnection.localDescription);
             serverConnection.send(
                 JSON.stringify({
                     event: "answer",
                     room_id: roomId,
                     user_id: uuid,
-                    data: sdp,
+                    sdp: peerConnection.localDescription,
                 })
             );
+            console.log("send answer description");
         })
         .catch(errorHandler);
 }

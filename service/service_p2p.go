@@ -81,7 +81,7 @@ func (s *P2PService) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			room := v.(channel.Room)
 			room.AddUser(message.UserID, c)
 			userId = message.UserID
-		case "exit", "pass":
+		default:
 			var ok bool
 			v, ok := s.Rooms.Load(message.RoomID)
 			room := v.(channel.Room)
